@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules/
+
+# Production builds
+dist/
+dist-ssr/
+*.local
+
+# Keep env files secret
+.env
+.env.production
+
+# Databases
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Zips & scripts
+*.zip
+zip.ps1

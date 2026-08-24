@@ -1,0 +1,123 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  role         String        // "ADMIN", "ORGANISER", "CUSTOMER"
+  createdAt    DateTime      @default(now())
+  bookings     Booking[]
+  holds        ShowSeat[]    @relation("UserHolds")
+  waitlists    Waitlist[]
+}
+
+model Venue {
+  id        String   @id @default(uuid())
+  name      String
+  rows      Int      // number of rows
+  cols      Int      // number of columns
+  createdAt DateTime @default(now())
+  seats     Seat[]
+  events    Event[]
+}
+
+model Seat {
+  id        String   @id @default(uuid())
+  venueId   String
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  rowName   String   // "A", "B", "C" etc.
+  colNumber Int      // 1, 2, 3 etc.
+  category  String   // "STANDARD", "PREMIUM"
+  showSeats ShowSeat[]
+
+  @@unique([venueId, rowName, colNumber])
+}
+
+model Event {
+  id             String               @id @default(uuid())
+  title          String
+  description    String
+  date           String               // YYYY-MM-DD
+  time           String               // HH:MM
+  venueId        String
+  venue          Venue                @relation(fields: [venueId], references: [id])
+  organiserId    String
+  imageUrl       String?
+  createdAt      DateTime             @default(now())
+  categoryPrices EventCategoryPrice[]
+  showSeats      ShowSeat[]
+  bookings       Booking[]
+  waitlists      Waitlist[]
+}
+
+model EventCategoryPrice {
+  id       String @id @default(uuid())
+  eventId  String
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category String // "STANDARD", "PREMIUM"
+  price    Float
+
+  @@unique([eventId, category])
+}
+
+model ShowSeat {
+  id             String     @id @default(uuid())
+  eventId        String
+  event          Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  seatId         String
+  seat           Seat       @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  status         String     // "AVAILABLE", "HELD", "BOOKED"
+  heldByUserId   String?
+  heldByUser     User?      @relation("UserHolds", fields: [heldByUserId], references: [id])
+  heldUntil      DateTime?
+  bookingId      String?
+  booking        Booking?   @relation(fields: [bookingId], references: [id])
+  waitlistOffers Waitlist[] @relation("WaitlistOfferSeat")
+
+  @@unique([eventId, seatId])
+}
+
+model Booking {
+  id               String     @id @default(uuid())
+  eventId          String
+  event            Event      @relation(fields: [eventId], references: [id])
+  userId           String
+  user             User       @relation(fields: [userId], references: [id])
+  bookingReference String     @unique // e.g. TKT-XXXXXX
+  status           String     // "PENDING", "CONFIRMED", "CANCELLED"
+  totalAmount      Float
+  createdAt        DateTime   @default(now())
+  showSeats        ShowSeat[]
+}
+
+model Waitlist {
+  id                 String    @id @default(uuid())
+  eventId            String
+  event              Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category           String    // "STANDARD", "PREMIUM"
+  position           Int       // Queue position
+  status             String    // "WAITING", "OFFERED", "COMPLETED", "EXPIRED"
+  createdAt          DateTime  @default(now())
+  offeredAt          DateTime?
+  offerExpiresAt     DateTime?
+  offeredShowSeatId  String?
+  offeredShowSeat    ShowSeat? @relation("WaitlistOfferSeat", fields: [offeredShowSeatId], references: [id])
+}
+
+model EmailLog {
+  id        String   @id @default(uuid())
+  recipient String
+  subject   String
+  body      String
+  sentAt    DateTime @default(now())
+}
