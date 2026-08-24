@@ -23,3 +23,12 @@ Thumbs.db
 # Zips & scripts
 *.zip
 zip.ps1
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
